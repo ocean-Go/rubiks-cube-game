@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3x3 魔方游戏 - Jarvis AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,255,255,0.3);
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .game-container {
+            perspective: 1000px;
+            margin: 30px 0;
+        }
+
+        .cube-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(-25deg) rotateY(-40deg);
+            transition: transform 0.1s ease;
+        }
+
+        .cubie {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            transform-style: preserve-3d;
+        }
+
+        .face {
+            position: absolute;
+            width: 56px;
+            height: 56px;
+            border: 2px solid #111;
+            border-radius: 6px;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+        }
+
+        /* Colors */
+        .front  { background: #00b300; transform: translateZ(30px); }
+        .back   { background: #0066cc; transform: rotateY(180deg) translateZ(30px); }
+        .up     { background: #ffffff; transform: rotateX(90deg) translateZ(30px); }
+        .down   { background: #ffcc00; transform: rotateX(-90deg) translateZ(30px); }
+        .left   { background: #ff6600; transform: rotateY(-90deg) translateZ(30px); }
+        .right  { background: #cc0000; transform: rotateY(90deg) translateZ(30px); }
+
+        .cubie:nth-child(1) { transform: translate3d(-60px, -60px, 0); }
+        .cubie:nth-child(2) { transform: translate3d(0, -60px, 0); }
+        .cubie:nth-child(3) { transform: translate3d(60px, -60px, 0); }
+        .cubie:nth-child(4) { transform: translate3d(-60px, 0, 0); }
+        .cubie:nth-child(5) { transform: translate3d(0, 0, 0); }
+        .cubie:nth-child(6) { transform: translate3d(60px, 0, 0); }
+        .cubie:nth-child(7) { transform: translate3d(-60px, 60px, 0); }
+        .cubie:nth-child(8) { transform: translate3d(0, 60px, 0); }
+        .cubie:nth-child(9) { transform: translate3d(60px, 60px, 0); }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-shuffle {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-hint {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats {
+            display: flex;
+            gap: 40px;
+            margin-top: 25px;
+            color: #fff;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        /* Hint Panel */
+        .hint-panel {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(200%);
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px 35px;
+            color: white;
+            max-width: 500px;
+            text-align: center;
+            transition: transform 0.4s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .hint-panel.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .hint-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #00d4ff;
+        }
+
+        .hint-content {
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        /* Move Controls */
+        .move-controls {
+            position: fixed;
+            top: 50%;
+            right: 30px;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .move-controls.show {
+            opacity: 1;
+        }
+
+        .move-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .move-btn:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.1);
+        }
+
+        /* Win Modal */
+        .win-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .win-modal.show {
+            display: flex;
+        }
+
+        .win-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 30px;
+            padding: 50px;
+            text-align: center;
+            color: white;
+            animation: winPop 0.5s ease;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        @keyframes winPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .win-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(90deg, #ffd700, #ffaa00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .win-stats {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confettiFall 3s linear forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Instructions */
+        .instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.85rem;
+            max-width: 250px;
+            line-height: 1.6;
+        }
+
+        .ai-badge {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .loading {
+            display: none;
+            color: white;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">🎲 3x3 魔方挑战</h1>
+    
+    <div class="game-container">
+        <div class="cube-container" id="cube"></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-shuffle" onclick="shuffleCube()">🔀 打乱</button>
+        <button class="btn btn-hint" onclick="requestHint()">💡 AI 提示</button>
+        <button class="btn btn-reset" onclick="resetCube()">🔄 重新开始</button>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value" id="steps">0</div>
+            <div class="stat-label">步数</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="hints">3</div>
+            <div class="stat-label">剩余提示</div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>AI 思考中...</div>
+    </div>
+
+    <div class="hint-panel" id="hintPanel">
+        <div class="hint-title">🤖 AI 助手建议</div>
+        <div class="hint-content" id="hintContent"></div>
+    </div>
+
+    <div class="win-modal" id="winModal">
+        <div class="win-content">
+            <div class="win-title">🎉 恭喜成功！</div>
+            <div class="win-stats">
+                用时: <span id="winTime">0</span> 秒<br>
+                步数: <span id="winSteps">0</span> 步
+            </div>
+            <button class="btn btn-shuffle" onclick="closeWinModal(); shuffleCube();">🔀 再来一局</button>
+        </div>
+    </div>
+
+    <div class="confetti" id="confetti"></div>
+
+    <div class="ai-badge">🤖 Jarvis AI</div>
+
+    <div class="instructions">
+        💡 玩法：点击右侧按钮旋转各层<br>
+        🔀 先打乱，再尝试复原<br>
+        💡 使用 AI 提示获取帮助
+    </div>
+
+    <script>
+        // Cube state - stores colors of each cubie face
+        let cubeState = [];
+        let solvedState = [];
+        let steps = 0;
+        let hintsRemaining = 3;
+        let moveHistory = [];
+        let stuckAttempts = 0;
+        let startTime = null;
+        let isAnimating = false;
+        let isSolved = true;
+
+        // Initialize cube
+        function initCube() {
+            const cube = document.getElementById('cube');
+            cube.innerHTML = '';
+            cubeState = [];
+            solvedState = [];
+
+            // Create 9 cubies (simplified 2D representation for now)
+            const colors = {
+                front: '#00b300',
+                back: '#0066cc',
+                up: '#ffffff',
+                down: '#ffcc00',
+                left: '#ff6600',
+                right: '#cc0000'
+            };
+
+            for (let i = 0; i < 9; i++) {
+                const cubie = document.createElement('div');
+                cubie.className = 'cubie';
+                
+                // Store state for each position
+                const state = {
+                    front: colors.front,
+                    back: colors.back,
+                    up: colors.up,
+                    down: colors.down,
+                    left: colors.left,
+                    right: colors.right
+                };
+                cubeState.push({...state});
+                solvedState.push({...state});
+
+                // Add faces
+                Object.keys(colors).forEach(face => {
+                    const faceEl = document.createElement('div');
+                    faceEl.className = `face ${face}`;
+                    cubie.appendChild(faceEl);
+                });
+
+                cube.appendChild(cubie);
+            }
+
+            updateDisplay();
+        }
+
+        // Rotate a layer
+        function rotateLayer(layer, clockwise = true) {
+            if (isAnimating || isSolved) return;
+            
+            isAnimating = true;
+            steps++;
+            moveHistory.push({layer, clockwise});
+            
+            // Update state
+            const newState = [...cubeState];
+            const direction = clockwise ? 1 : -1;
+
+            // For simplified 2D, rotate the specified layer indices
+            const layerIndices = {
+                'top': [0, 1, 2],
+                'middle': [3, 4, 5],
+                'bottom': [6, 7, 8]
+            };
+
+            const indices = layerIndices[layer] || [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+            // Rotate colors within layer
+            if (indices.length === 3) {
+                // Single row rotation
+                const temp = [...cubeState[indices[0]]];
+                
+                if (clockwise) {
+                    newState[indices[0]] = {...cubeState[indices[2]]};
+                    newState[indices[2]] = {...cubeState[indices[1]]};
+                    newState[indices[1]] = temp;
+                } else {
+                    newState[indices[0]] = {...cubeState[indices[1]]};
+                    newState[indices[1]] = {...cubeState[indices[2]]};
+                    newState[indices[2]] = temp;
+                }
+            }
+
+            cubeState = newState;
+            updateDisplay();
+            
+            setTimeout(() => {
+                isAnimating = false;
+                checkSolved();
+            }, 300);
+
+            document.getElementById('steps').textContent = steps;
+        }
+
+        // Update visual display
+        function updateDisplay() {
+            const cubies = document.querySelectorAll('.cubie');
+            
+            cubies.forEach((cubie, index) => {
+                const faces = cubie.querySelectorAll('.face');
+                const state = cubeState[index];
+                
+                faces.forEach(face => {
+                    const color = state[face.classList[1]];
+                    face.style.background = color;
+                });
+            });
+        }
+
+        // Shuffle cube
+        function shuffleCube() {
+            if (isAnimating) return;
+            
+            isSolved = false;
+            steps = 0;
+            moveHistory = [];
+            stuckAttempts = 0;
+            startTime = Date.now();
+            hintsRemaining = 3;
+            
+            document.getElementById('steps').textContent = '0';
+            document.getElementById('hints').textContent = '3';
+            hideHint();
+
+            const layers = ['top', 'middle', 'bottom'];
+            
+            // Random shuffle
+            for (let i = 0; i < 20; i++) {
+                const layer = layers[Math.floor(Math.random() * 3)];
+                const clockwise = Math.random() > 0.5;
+                
+                // Apply shuffle move
+                const newState = [...cubeState];
+                const indices = {top: [0,1,2], middle: [3,4,5], bottom: [6,7,8]}[layer];
+                const temp = {...cubeState[indices[0]]};
+                
+                if (clockwise) {
+                    newState[indices[0]] = {...cubeState[indices[2]]};
+                    newState[indices[2]] = {...cubeState[indices[1]]};
+                    newState[indices[1]] = temp;
+                } else {
+                    newState[indices[0]] = {...cubeState[indices[1]]};
+                    newState[indices[1]] = {...cubeState[indices[2]]};
+                    newState[indices[2]] = temp;
+                }
+                
+                cubeState = newState;
+                updateDisplay();
+            }
+
+            // Reset and animate
+            initCube();
+            setTimeout(() => {
+                for (let i = 0; i < 20; i++) {
+                    const layer = layers[Math.floor(Math.random() * 3)];
+                    const clockwise = Math.random() > 0.5;
+                    rotateLayerInternal(layer, clockwise);
+                }
+                checkSolved();
+            }, 500);
+        }
+
+        function rotateLayerInternal(layer, clockwise) {
+            const newState = [...cubeState];
+            const indices = {top: [0,1,2], middle: [3,4,5], bottom: [6,7,8]}[layer];
+            const temp = {...cubeState[indices[0]]};
+            
+            if (clockwise) {
+                newState[indices[0]] = {...cubeState[indices[2]]};
+                newState[indices[2]] = {...cubeState[indices[1]]};
+                newState[indices[1]] = temp;
+            } else {
+                newState[indices[0]] = {...cubeState[indices[1]]};
+                newState[indices[1]] = {...cubeState[indices[2]]};
+                newState[indices[2]] = temp;
+            }
+            
+            cubeState = newState;
+            updateDisplay();
+        }
+
+        // Check if solved
+        function checkSolved() {
+            const allSame = cubeState.every((state, index) => {
+                if (index === 0) return true; // Skip reference
+                return JSON.stringify(state) === JSON.stringify(cubeState[0]);
+            });
+
+            if (allSame && !isSolved && steps > 0) {
+                isSolved = true;
+                showWinModal();
+            }
+        }
+
+        // Show win modal
+        function showWinModal() {
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            document.getElementById('winTime').textContent = elapsed;
+            document.getElementById('winSteps').textContent = steps;
+            document.getElementById('winModal').classList.add('show');
+            createConfetti();
+        }
+
+        // Close win modal
+        function closeWinModal() {
+            document.getElementById('winModal').classList.remove('show');
+        }
+
+        // Create confetti
+        function createConfetti() {
+            const container = document.getElementById('confetti');
+            container.innerHTML = '';
+            
+            const colors = ['#00d4ff', '#7b2cbf', '#ffd700', '#ff6b6b', '#4ecdc4'];
+            
+            for (let i = 0; i < 100; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + '%';
+                piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = Math.random() * 2 + 's';
+                piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+                container.appendChild(piece);
+            }
+
+            setTimeout(() => container.innerHTML = '', 5000);
+        }
+
+        // Request hint
+        async function requestHint() {
+            if (hintsRemaining <= 0 || isSolved) return;
+
+            document.getElementById('loading').classList.add('show');
+            stuckAttempts++;
+
+            // Local solver suggestion
+            const localHint = getLocalHint();
+            
+            // Get AI explanation from MiniMax
+            const aiExplanation = await getMiniMaxExplanation(localHint, stuckAttempts);
+
+            document.getElementById('loading').classList.remove('show');
+            hintsRemaining--;
+            document.getElementById('hints').textContent = hintsRemaining;
+
+            showHint(localHint, aiExplanation);
+        }
+
+        // Local solver hint
+        function getLocalHint() {
+            const hints = [
+                { move: 'rotateLayer("top", true)', text: '顺时针旋转顶层' },
+                { move: 'rotateLayer("bottom", false)', text: '逆时针旋转底层' },
+                { move: 'rotateLayer("middle", true)', text: '顺时针旋转中层' },
+                { move: 'rotateLayer("top", false)', text: '逆时针旋转顶层' },
+                { move: 'rotateLayer("bottom", true)', text: '顺时针旋转底层' }
+            ];
+            return hints[Math.floor(Math.random() * hints.length)];
+        }
+
+        // MiniMax explanation
+        async function getMiniMaxExplanation(hint, attempts) {
+            const messages = [
+                { role: 'system', content: '你是 Jarvis，用户的魔方助手。用简洁友好的中文解释魔方步骤。' },
+                { role: 'user', content: `玩家在解魔方时卡住了。${attempts >= 3 ? '这是第3+次请求，给出更详细的指导。' : '给出简单的下一步提示。'}\n\n下一步操作：${hint.text}\n\n请用2-3句话解释为什么这一步能帮助还原魔方。保持简洁、鼓励的语气。` }
+            ];
+
+            try {
+                const response = await fetch('https://api.minimax.chat/v1/text/chatcompletion_v2', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer YOUR_MINIMAX_API_KEY'
+                    },
+                    body: JSON.stringify({
+                        model: 'MiniMax-M2.1',
+                        messages: messages,
+                        temperature: 0.7,
+                        max_tokens: 200
+                    })
+                });
+
+                const data = await response.json();
+                if (data.choices && data.choices[0]) {
+                    return data.choices[0].message.content;
+                }
+            } catch (e) {
+                console.error('MiniMax error:', e);
+            }
+
+            return '这一步能帮你对齐顶层颜色，离成功更近一步！💪';
+        }
+
+        // Show hint
+        function showHint(local, ai) {
+            const panel = document.getElementById('hintPanel');
+            const content = document.getElementById('hintContent');
+            
+            content.innerHTML = `
+                <strong>建议操作：${local.text}</strong><br><br>
+                <em>🤖 AI 解释：</em><br>
+                ${ai}
+            `;
+            
+            panel.classList.add('show');
+        }
+
+        // Hide hint
+        function hideHint() {
+            document.getElementById('hintPanel').classList.remove('show');
+        }
+
+        // Reset cube
+        function resetCube() {
+            initCube();
+            steps = 0;
+            hintsRemaining = 3;
+            moveHistory = [];
+            stuckAttempts = 0;
+            isSolved = true;
+            
+            document.getElementById('steps').textContent = '0';
+            document.getElementById('hints').textContent = '3';
+            hideHint();
+        }
+
+        // Initialize on load
+        initCube();
+    </script>
+</body>
+</html>
