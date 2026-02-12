@@ -8,9 +8,10 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { min-height: 100vh; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; color: white; }
         h1 { font-size: 1.6rem; margin: 10px 0; background: linear-gradient(90deg, #00d4ff, #7b2cbf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .scene { width: 300px; height: 300px; perspective: 800px; margin: 10px auto; }
-        .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transform: rotateX(-25deg) rotateY(-45deg); }
-        .cubie { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; }
+        .scene { width: 300px; height: 300px; perspective: 800px; margin: 10px auto; cursor: grab; }
+        .scene:active { cursor: grabbing; }
+        .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transform: rotateX(-25deg) rotateY(-45deg); transition: transform 0.3s ease; }
+        .cubie { position: absolute; width: 60px; height: 60px; transform-style: preserve-3d; transition: transform 0.15s ease; }
         .face { position: absolute; width: 58px; height: 58px; border: 1px solid #000; border-radius: 4px; backface-visibility: hidden; }
         .face.front { background: #00b300; transform: translateZ(30px); }
         .face.back { background: #0066cc; transform: rotateY(180deg) translateZ(30px); }
@@ -76,54 +77,172 @@
     <div class="ai-badge">🤖 Jarvis AI</div>
     <div class="instructions">💡 拖拽旋转 | 🔀 打乱 | 💡 AI 提示</div>
     <script>
-        let rotX = -25, rotY = -40, isDrag = false, px, py, solved = true, steps = 0, hints = 3, attempts = 0, startTime = null;
+        // Cube state - store colors for each face
+        let cubies = [];
+        let rotX = -25, rotY = -40;
+        let isDrag = false, px, py;
+        let solved = true, steps = 0, hints = 3, attempts = 0, startTime = null;
+        let isShuffling = false;
+        
+        // Color configuration
+        const COLORS = {
+            front: '#00b300',
+            back: '#0066cc',
+            right: '#cc0000',
+            left: '#ff6600',
+            top: '#ffffff',
+            bottom: '#ffcc00'
+        };
+        
+        // Initialize cube
         function initCube() {
             const c = document.getElementById('cube');
             c.innerHTML = '';
+            cubies = [];
+            
             for (let x = -1; x <= 1; x++) {
                 for (let y = -1; y <= 1; y++) {
                     for (let z = -1; z <= 1; z++) {
-                        const cubie = document.createElement('div');
-                        cubie.className = 'cubie';
-                        cubie.style.transform = `translate3d(${(x+1)*60}px, ${(y+1)*60}px, ${z*60}px)`;
+                        const el = document.createElement('div');
+                        el.className = 'cubie';
+                        el.dataset.x = x;
+                        el.dataset.y = y;
+                        el.dataset.z = z;
+                        el.style.transform = `translate3d(${(x+1)*60}px, ${(y+1)*60}px, ${z*60}px)`;
+                        
+                        // Store color state
+                        const faceColors = {};
                         ['front','back','right','left','top','bottom'].forEach(f => {
-                            const el = document.createElement('div');
-                            el.className = 'face ' + f;
-                            let show = false;
-                            if (f==='front'&&z===1) show=true; if (f==='back'&&z===-1) show=true;
-                            if (f==='right'&&x===1) show=true; if (f==='left'&&x===-1) show=true;
-                            if (f==='top'&&y===-1) show=true; if (f==='bottom'&&y===1) show=true;
-                            if (!show) el.style.display = 'none';
-                            cubie.appendChild(el);
+                            faceColors[f] = COLORS[f];
                         });
-                        c.appendChild(cubie);
+                        
+                        // Create visible faces
+                        ['front','back','right','left','top','bottom'].forEach(f => {
+                            const faceEl = document.createElement('div');
+                            faceEl.className = 'face ' + f;
+                            let visible = false;
+                            if (f==='front'&&z===1) visible=true;
+                            if (f==='back'&&z===-1) visible=true;
+                            if (f==='right'&&x===1) visible=true;
+                            if (f==='left'&&x===-1) visible=true;
+                            if (f==='top'&&y===-1) visible=true;
+                            if (f==='bottom'&&y===1) visible=true;
+                            if (!visible) faceEl.style.display = 'none';
+                            faceEl.style.background = faceColors[f];
+                            el.appendChild(faceEl);
+                        });
+                        
+                        cubies.push({el, x, y, z, colors: faceColors});
+                        c.appendChild(el);
                     }
                 }
             }
         }
-        function updateRot() { document.getElementById('cube').style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`; }
+        
+        function updateRotation() {
+            document.getElementById('cube').style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+        }
+        
+        // Drag rotation
         const scene = document.querySelector('.scene');
         scene.addEventListener('mousedown', e => { isDrag = true; px = e.clientX; py = e.clientY; });
-        document.addEventListener('mousemove', e => { if (!isDrag) return; rotY += (e.clientX-px)*0.8; rotX -= (e.clientY-py)*0.8; updateRot(); px=e.clientX; py=e.clientY; });
+        document.addEventListener('mousemove', e => {
+            if (!isDrag) return;
+            rotY += (e.clientX-px)*0.8;
+            rotX -= (e.clientY-py)*0.8;
+            updateRotation();
+            px=e.clientX; py=e.clientY;
+        });
         document.addEventListener('mouseup', () => isDrag = false);
         scene.addEventListener('touchstart', e => { isDrag = true; px=e.touches[0].clientX; py=e.touches[0].clientY; });
-        scene.addEventListener('touchmove', e => { if (!isDrag) return; e.preventDefault(); rotY += (e.touches[0].clientX-px)*0.8; rotX -= (e.touches[0].clientY-py)*0.8; updateRot(); px=e.touches[0].clientX; py=e.touches[0].clientY; }, {passive:false});
+        scene.addEventListener('touchmove', e => {
+            if (!isDrag) return;
+            e.preventDefault();
+            rotY += (e.touches[0].clientX-px)*0.8;
+            rotX -= (e.touches[0].clientY-py)*0.8;
+            updateRotation();
+            px=e.touches[0].clientX; py=e.touches[0].clientY;
+        }, {passive:false});
         scene.addEventListener('touchend', () => isDrag = false);
+        
+        // Rotate a layer
+        function rotateLayer(axis, layer, direction) {
+            const delta = direction * 90;
+            
+            cubies.forEach(cubie => {
+                const val = cubie[axis];
+                if (val === layer) {
+                    // Get current rotation
+                    const currentTransform = cubie.el.style.transform;
+                    const rotateMatch = currentTransform.match(/rotate[XYZ]\([^)]+\)/g) || [];
+                    
+                    // Calculate new position
+                    let newX = cubie.x, newY = cubie.y, newZ = cubie.z;
+                    
+                    if (axis === 'x') {
+                        if (direction > 0) { newY = -cubie.z; newZ = cubie.y; }
+                        else { newY = cubie.z; newZ = -cubie.y; }
+                    } else if (axis === 'y') {
+                        if (direction > 0) { newX = cubie.z; newZ = -cubie.x; }
+                        else { newX = -cubie.z; newZ = cubie.x; }
+                    } else if (axis === 'z') {
+                        if (direction > 0) { newX = -cubie.y; newY = cubie.x; }
+                        else { newX = cubie.y; newY = -cubie.x; }
+                    }
+                    
+                    cubie.x = newX;
+                    cubie.y = newY;
+                    cubie.z = newZ;
+                    
+                    cubie.el.style.transform = `translate3d(${(newX+1)*60}px, ${(newY+1)*60}px, ${newZ*60}px)`;
+                }
+            });
+        }
+        
+        // Shuffle function - NOW ACTUALLY ROTATES!
         function shuffleCube() {
+            if (isShuffling) return;
+            isShuffling = true;
+            
             if (!startTime) startTime = Date.now();
             solved = false; steps = 0; hints = 3; attempts = 0;
             document.getElementById('steps').textContent = '0';
             document.getElementById('hints').textContent = '3';
             hideHint();
+            
+            const moves = 15;
             let count = 0;
-            const int = setInterval(() => { steps++; document.getElementById('steps').textContent = steps; count++; if (count>=15) { clearInterval(int); steps=0; document.getElementById('steps').textContent='0'; } }, 80);
+            const axes = ['x', 'y', 'z'];
+            const layers = [-1, 0, 1];
+            const dirs = [1, -1];
+            
+            const shuffleInterval = setInterval(() => {
+                const axis = axes[Math.floor(Math.random() * axes.length)];
+                const layer = layers[Math.floor(Math.random() * layers.length)];
+                const dir = dirs[Math.floor(Math.random() * dirs.length)];
+                
+                rotateLayer(axis, layer, dir);
+                
+                steps++;
+                document.getElementById('steps').textContent = steps;
+                count++;
+                
+                if (count >= moves) {
+                    clearInterval(shuffleInterval);
+                    steps = 0;
+                    document.getElementById('steps').textContent = '0';
+                    isShuffling = false;
+                }
+            }, 150);
         }
+        
         function win() {
             solved = true;
             const t = Math.round((Date.now()-startTime)/1000);
             document.getElementById('winTime').textContent = t;
             document.getElementById('winSteps').textContent = steps;
             document.getElementById('winModal').classList.add('show');
+            
             const colors = ['#00d4ff','#7b2cbf','#ffd700','#ff6b6b','#4ecdc4'];
             const c = document.getElementById('confetti');
             c.innerHTML = '';
@@ -137,28 +256,39 @@
             }
             setTimeout(() => c.innerHTML='', 5000);
         }
+        
         function closeWinModal() { document.getElementById('winModal').classList.remove('show'); }
+        
         function requestHint() {
-            if (hints<=0 || solved) return;
+            if (hints<=0 || solved || isShuffling) return;
             document.getElementById('loading').classList.add('show');
             attempts++;
+            
             setTimeout(() => {
                 document.getElementById('loading').classList.remove('show');
                 hints--; document.getElementById('hints').textContent = hints;
-                const hs = ["🎯 建议：观察顶层颜色分布", "🎯 建议：保持耐心，一步步来", "🎯 建议：先固定一个面"];
+                const hs = ["🎯 建议：旋转顶层", "🎯 建议：把右侧转一下", "🎯 建议：保持耐心"];
                 showHint(hs[attempts%hs.length]);
             }, 600);
         }
-        function showHint(msg) { document.getElementById('hintContent').innerHTML = msg; document.getElementById('hintPanel').classList.add('show'); }
+        
+        function showHint(msg) {
+            document.getElementById('hintContent').innerHTML = msg;
+            document.getElementById('hintPanel').classList.add('show');
+        }
+        
         function hideHint() { document.getElementById('hintPanel').classList.remove('show'); }
+        
         function resetCube() {
-            rotX = -25; rotY = -40; solved = true; steps = 0; hints = 3; attempts = 0; startTime = null;
+            rotX = -25; rotY = -40;
+            solved = true; steps = 0; hints = 3; attempts = 0; startTime = null; isShuffling = false;
             document.getElementById('steps').textContent = '0';
             document.getElementById('hints').textContent = '3';
             hideHint();
-            updateRot();
+            updateRotation();
             initCube();
         }
+        
         initCube();
     </script>
 </body>
