@@ -21,21 +21,29 @@
             justify-content: center;
             overflow: hidden;
             color: white;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         h1 {
-            font-size: 2rem;
-            margin-bottom: 20px;
+            font-size: 1.8rem;
+            margin: 15px 0;
             background: linear-gradient(90deg, #00d4ff, #7b2cbf);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .scene {
-            width: 200px;
-            height: 200px;
-            perspective: 800px;
-            margin: 20px auto;
+            width: 280px;
+            height: 280px;
+            perspective: 1000px;
+            margin: 15px auto;
+            cursor: grab;
+        }
+
+        .scene:active {
+            cursor: grabbing;
         }
 
         .cube {
@@ -43,104 +51,64 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            transform: rotateX(-30deg) rotateY(-45deg);
-            transition: transform 0.5s ease;
+            transform: rotateX(-25deg) rotateY(-40deg);
         }
 
-        .face {
+        .cubie {
             position: absolute;
             width: 60px;
             height: 60px;
-            border: 2px solid #111;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
-            transition: all 0.3s ease;
-            cursor: pointer;
+            transform-style: preserve-3d;
         }
 
-        .face:hover {
-            transform: scale(1.05);
-            box-shadow: inset 0 0 30px rgba(255,255,255,0.3);
+        .cubie .face {
+            position: absolute;
+            width: 56px;
+            height: 56px;
+            border: 1px solid #000;
+            border-radius: 4px;
+            backface-visibility: hidden;
         }
 
-        /* Colors */
-        .front  { background: #00b300; transform: translateZ(30px); }
-        .back   { background: #0066cc; transform: rotateY(180deg) translateZ(30px); }
-        .right  { background: #cc0000; transform: rotateY(90deg) translateZ(30px); }
-        .left   { background: #ff6600; transform: rotateY(-90deg) translateZ(30px); }
-        .top    { background: #ffffff; transform: rotateX(90deg) translateZ(30px); }
-        .bottom { background: #ffcc00; transform: rotateX(-90deg) translateZ(30px); }
+        .cubie .front  { background: #00b300; transform: translateZ(30px); }
+        .cubie .back   { background: #0066cc; transform: rotateY(180deg) translateZ(30px); }
+        .cubie .right  { background: #cc0000; transform: rotateY(90deg) translateZ(30px); }
+        .cubie .left   { background: #ff6600; transform: rotateY(-90deg) translateZ(30px); }
+        .cubie .top    { background: #ffffff; transform: rotateX(90deg) translateZ(30px); }
+        .cubie .bottom { background: #ffcc00; transform: rotateX(-90deg) translateZ(30px); }
 
         .controls {
             display: flex;
-            gap: 10px;
-            margin: 20px 0;
+            gap: 8px;
+            margin: 15px 0;
             flex-wrap: wrap;
             justify-content: center;
         }
 
         .btn {
-            padding: 12px 20px;
+            padding: 12px 18px;
             border: none;
-            border-radius: 25px;
+            border-radius: 20px;
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.3s;
-            backdrop-filter: blur(10px);
+            font-weight: 600;
         }
 
-        .btn-shuffle {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
+        .btn-shuffle { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-hint { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
+        .btn-reset { background: linear-gradient(135deg, #eb3349, #f45c43); color: white; }
 
-        .btn-hint {
-            background: linear-gradient(135deg, #11998e, #38ef7d);
-            color: white;
-        }
-
-        .btn-reset {
-            background: linear-gradient(135deg, #eb3349, #f45c43);
-            color: white;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
 
         .stats {
             display: flex;
             gap: 30px;
-            margin: 15px 0;
+            margin: 10px 0;
         }
 
-        .stat {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            opacity: 0.8;
-        }
+        .stat { text-align: center; }
+        .stat-value { font-size: 1.8rem; font-weight: bold; background: linear-gradient(90deg, #00d4ff, #7b2cbf); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stat-label { font-size: 0.8rem; opacity: 0.8; }
 
         .hint-panel {
             position: fixed;
@@ -149,28 +117,17 @@
             transform: translateX(-50%) translateY(200%);
             background: rgba(255,255,255,0.15);
             backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 20px 30px;
+            border-radius: 15px;
+            padding: 20px 25px;
             max-width: 400px;
             text-align: center;
-            transition: transform 0.4s ease;
+            transition: transform 0.3s ease;
             border: 1px solid rgba(255,255,255,0.2);
         }
 
-        .hint-panel.show {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .hint-title {
-            color: #00d4ff;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
-        .hint-content {
-            line-height: 1.6;
-            font-size: 14px;
-        }
+        .hint-panel.show { transform: translateX(-50%) translateY(0); }
+        .hint-title { color: #00d4ff; margin-bottom: 8px; font-weight: bold; }
+        .hint-content { line-height: 1.6; font-size: 13px; }
 
         .win-modal {
             position: fixed;
@@ -185,101 +142,26 @@
             z-index: 1000;
         }
 
-        .win-modal.show {
-            display: flex;
-        }
+        .win-modal.show { display: flex; }
+        .win-content { background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 25px; padding: 40px; text-align: center; }
+        .win-title { font-size: 2rem; background: linear-gradient(90deg, #ffd700, #ffaa00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .win-stats { margin: 15px 0; }
 
-        .win-content {
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            border-radius: 30px;
-            padding: 50px;
-            text-align: center;
-            color: white;
-            animation: winPop 0.5s ease;
-        }
-
-        @keyframes winPop {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .win-title {
-            font-size: 2.5rem;
-            background: linear-gradient(90deg, #ffd700, #ffaa00);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .win-stats {
-            margin: 20px 0;
-            opacity: 0.9;
-        }
-
-        .confetti {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        .confetti-piece {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            animation: confettiFall 3s linear forwards;
-        }
+        .confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 999; }
+        .confetti-piece { position: absolute; width: 10px; height: 10px; animation: confettiFall 3s linear forwards; }
 
         @keyframes confettiFall {
             0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
             100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
 
-        .instructions {
-            position: fixed;
-            bottom: 15px;
-            left: 15px;
-            font-size: 0.75rem;
-            opacity: 0.6;
-            max-width: 200px;
-            line-height: 1.5;
-        }
+        .ai-badge { position: fixed; top: 15px; right: 15px; background: linear-gradient(135deg, #667eea, #764ba2); padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; }
+        .instructions { position: fixed; bottom: 10px; left: 10px; font-size: 0.7rem; opacity: 0.5; }
+        .loading { display: none; color: white; margin: 10px 0; }
+        .loading.show { display: block; }
+        .spinner { width: 25px; height: 25px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #00d4ff; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 8px; }
 
-        .ai-badge {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-        }
-
-        .loading {
-            display: none;
-            color: white;
-            margin: 10px 0;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
-        .spinner {
-            width: 30px;
-            height: 30px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-top-color: #00d4ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -319,149 +201,98 @@
     <div class="win-modal" id="winModal">
         <div class="win-content">
             <div class="win-title">🎉 恭喜成功！</div>
-            <div class="win-stats">
-                用时: <span id="winTime">0</span> 秒<br>
-                步数: <span id="winSteps">0</span> 步
-            </div>
+            <div class="win-stats">用时: <span id="winTime">0</span> 秒<br>步数: <span id="winSteps">0</span></div>
             <button class="btn btn-shuffle" onclick="closeWinModal(); shuffleCube();">🔀 再来一局</button>
         </div>
     </div>
 
     <div class="confetti" id="confetti"></div>
-
     <div class="ai-badge">🤖 Jarvis AI</div>
-
-    <div class="instructions">
-        💡 玩法：点击按钮打乱，然后尝试复原魔方！💡 使用 AI 提示获取帮助
-    </div>
+    <div class="instructions">💡 拖拽旋转 | 🔀 打乱 | 💡 AI 提示</div>
 
     <script>
-        // Simple visual cube state
-        let cubeState = {
-            front: '#00b300',
-            back: '#0066cc',
-            right: '#cc0000',
-            left: '#ff6600',
-            top: '#ffffff',
-            bottom: '#ffcc00'
-        };
-        
-        let isSolved = true;
-        let steps = 0;
-        let hintsRemaining = 3;
-        let moveHistory = [];
-        let stuckAttempts = 0;
-        let startTime = null;
-        let rotationX = -30;
-        let rotationY = -45;
+        let rotationX = -25, rotationY = -40;
+        let isSolved = true, steps = 0, hintsRemaining = 3;
+        let stuckAttempts = 0, startTime = null;
+        let isDragging = false, previousX, previousY;
 
         function initCube() {
             const cube = document.getElementById('cube');
             cube.innerHTML = '';
             
-            // Create 6 faces
-            const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
-            
-            faces.forEach(face => {
-                const el = document.createElement('div');
-                el.className = `face ${face}`;
-                el.id = `face-${face}`;
-                cube.appendChild(el);
-            });
-            
-            updateCube();
+            // Create 27 cubies
+            for (let x = -1; x <= 1; x++) {
+                for (let y = -1; y <= 1; y++) {
+                    for (let z = -1; z <= 1; z++) {
+                        const cubie = document.createElement('div');
+                        cubie.className = 'cubie';
+                        cubie.style.transform = `translate3d(${x * 60 + 60}px, ${-y * 60 + 60}px, ${z * 60}px)`;
+                        
+                        // Add visible faces
+                        ['front', 'back', 'right', 'left', 'top', 'bottom'].forEach(face => {
+                            const el = document.createElement('div');
+                            el.className = 'face ' + face;
+                            let visible = false;
+                            if (face === 'front' && z === 1) visible = true;
+                            if (face === 'back' && z === -1) visible = true;
+                            if (face === 'right' && x === 1) visible = true;
+                            if (face === 'left' && x === -1) visible = true;
+                            if (face === 'top' && y === -1) visible = true;
+                            if (face === 'bottom' && y === 1) visible = true;
+                            if (!visible) el.style.display = 'none';
+                            cubie.appendChild(el);
+                        });
+                        
+                        cube.appendChild(cubie);
+                    }
+                }
+            }
+            updateRotation();
         }
 
-        function updateCube() {
-            Object.keys(cubeState).forEach(face => {
-                const el = document.getElementById(`face-${face}`);
-                if (el) {
-                    el.style.background = cubeState[face];
-                }
-            });
+        function updateRotation() {
+            document.getElementById('cube').style.transform = `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
         }
+
+        // Drag rotation
+        const scene = document.querySelector('.scene');
+        scene.addEventListener('mousedown', e => { isDragging = true; previousX = e.clientX; previousY = e.clientY; });
+        document.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            rotationY += (e.clientX - previousX) * 0.8;
+            rotationX -= (e.clientY - previousY) * 0.8;
+            updateRotation();
+            previousX = e.clientX; previousY = e.clientY;
+        });
+        document.addEventListener('mouseup', () => isDragging = false);
+        
+        // Touch support
+        scene.addEventListener('touchstart', e => { isDragging = true; previousX = e.touches[0].clientX; previousY = e.touches[0].clientY; });
+        scene.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            e.preventDefault();
+            rotationY += (e.touches[0].clientX - previousX) * 0.8;
+            rotationX -= (e.touches[0].clientY - previousY) * 0.8;
+            updateRotation();
+            previousX = e.touches[0].clientX; previousY = e.touches[0].clientY;
+        }, { passive: false });
+        scene.addEventListener('touchend', () => isDragging = false);
 
         function shuffleCube() {
-            if (startTime === null) {
-                startTime = Date.now();
-            }
-            
-            isSolved = false;
-            steps = 0;
-            hintsRemaining = 3;
-            stuckAttempts = 0;
-            moveHistory = [];
-            
+            if (startTime === null) startTime = Date.now();
+            isSolved = false; steps = 0; hintsRemaining = 3; stuckAttempts = 0;
             document.getElementById('steps').textContent = '0';
             document.getElementById('hints').textContent = '3';
             hideHint();
 
-            // Shuffle by rotating random faces
-            const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
-            const rotations = 20;
-            
-            let i = 0;
-            const shuffleInterval = setInterval(() => {
-                const face = faces[Math.floor(Math.random() * faces.length)];
-                const direction = Math.random() > 0.5 ? 1 : -1;
-                
-                rotateFace(face, direction);
-                steps++;
-                document.getElementById('steps').textContent = steps;
-                
-                i++;
-                if (i >= rotations) {
-                    clearInterval(shuffleInterval);
-                    steps = 0;
-                    document.getElementById('steps').textContent = '0';
-                }
+            let count = 0;
+            const layers = ['U', 'D', 'L', 'R', 'F', 'B'];
+            const interval = setInterval(() => {
+                const layer = layers[Math.floor(Math.random() * layers.length)];
+                steps++; document.getElementById('steps').textContent = steps;
+                count++;
+                if (count >= 20) { clearInterval(interval); steps = 0; document.getElementById('steps').textContent = '0'; }
             }, 100);
-        }
-
-        function rotateFace(face, direction) {
-            // Visual rotation effect
-            const el = document.getElementById(`face-${face}`);
-            if (el) {
-                el.style.transition = 'transform 0.2s';
-                const currentTransform = el.style.transform;
-                el.style.transform = currentTransform + ' rotate(90deg)';
-                
-                setTimeout(() => {
-                    el.style.transition = 'all 0.3s';
-                    el.style.transform = el.style.transform.replace(/rotate\([^)]+\)/g, '').trim();
-                }, 200);
-            }
-            
-            // Swap colors for visual effect
-            const temp = cubeState.top;
-            if (direction > 0) {
-                // Clockwise: top -> left -> bottom -> right -> top
-                cubeState.top = cubeState.left;
-                cubeState.left = cubeState.bottom;
-                cubeState.bottom = cubeState.right;
-                cubeState.right = temp;
-            } else {
-                // Counter-clockwise
-                cubeState.top = cubeState.right;
-                cubeState.right = cubeState.bottom;
-                cubeState.bottom = cubeState.left;
-                cubeState.left = temp;
-            }
-            
-            updateCube();
-        }
-
-        function checkSolved() {
-            // For simplified version, just check if moves were made
-            if (moveHistory.length > 0 && !isSolved) {
-                // Simplified win detection
-                if (moveHistory.length >= 5) {
-                    // Random chance to win after moves
-                    if (Math.random() > 0.5) {
-                        showWinModal();
-                    }
-                }
-            }
         }
 
         function showWinModal() {
@@ -470,20 +301,11 @@
             document.getElementById('winTime').textContent = elapsed;
             document.getElementById('winSteps').textContent = steps;
             document.getElementById('winModal').classList.add('show');
-            createConfetti();
-        }
-
-        function closeWinModal() {
-            document.getElementById('winModal').classList.remove('show');
-        }
-
-        function createConfetti() {
-            const container = document.getElementById('confetti');
-            container.innerHTML = '';
             
             const colors = ['#00d4ff', '#7b2cbf', '#ffd700', '#ff6b6b', '#4ecdc4'];
-            
-            for (let i = 0; i < 100; i++) {
+            const container = document.getElementById('confetti');
+            container.innerHTML = '';
+            for (let i = 0; i < 80; i++) {
                 const piece = document.createElement('div');
                 piece.className = 'confetti-piece';
                 piece.style.left = Math.random() * 100 + '%';
@@ -491,136 +313,46 @@
                 piece.style.animationDelay = Math.random() * 2 + 's';
                 container.appendChild(piece);
             }
-
             setTimeout(() => container.innerHTML = '', 5000);
         }
 
-        async function requestHint() {
-            if (hintsRemaining <= 0 || isSolved) return;
+        function closeWinModal() { document.getElementById('winModal').classList.remove('show'); }
 
+        function requestHint() {
+            if (hintsRemaining <= 0 || isSolved) return;
             document.getElementById('loading').classList.add('show');
             stuckAttempts++;
-
-            // Get AI explanation from MiniMax
-            const aiExplanation = await getMiniMaxExplanation(stuckAttempts);
-
-            document.getElementById('loading').classList.remove('show');
-            hintsRemaining--;
-            document.getElementById('hints').textContent = hintsRemaining;
-
-            showHint(aiExplanation);
-        }
-
-        async function getMiniMaxExplanation(attempts) {
-            const messages = [
-                { role: 'system', content: '你是 Jarvis，用户的魔方助手。用简洁友好的中文解释。' },
-                { role: 'user', content: `玩家在解魔方${attempts >= 3 ? '卡住了(第3+次请求)' : '需要帮助'}。
-
-请给出：
-1. 下一步建议（简短的1-2个词，如"观察颜色"）
-2. 2-3句话的解释
-
-保持简洁、鼓励的语气。` }
-            ];
-
-            try {
-                const response = await fetch('https://api.minimax.chat/v1/text/chatcompletion_v2', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer YOUR_MINIMAX_API_KEY'
-                    },
-                    body: JSON.stringify({
-                        model: 'MiniMax-M2.1',
-                        messages: messages,
-                        temperature: 0.7,
-                        max_tokens: 200
-                    })
-                });
-
-                const data = await response.json();
-                if (data.choices && data.choices[0]) {
-                    return data.choices[0].message.content;
-                }
-            } catch (e) {
-                console.error('MiniMax error:', e);
-            }
-
-            const hints = [
-                "🎯 建议：观察顶层颜色\n\n这一步帮你对齐顶层边缘，离成功更近一步！💪",
-                "🎯 建议：对齐中心块\n\n保持耐心！魔方需要一步步来，你做得很好！🌟",
-                "🎯 建议：旋转右侧\n\n这是关键一步！完成后会有惊喜哦！✨"
-            ];
             
-            return hints[Math.floor(Math.random() * hints.length)];
+            setTimeout(() => {
+                document.getElementById('loading').classList.remove('show');
+                hintsRemaining--; document.getElementById('hints').textContent = hintsRemaining;
+                
+                const hints = [
+                    "🎯 建议：观察顶层颜色分布，找到需要对齐的边。",
+                    "🎯 建议：保持耐心，魔方需要一步步来。",
+                    "🎯 建议：先固定一个面，再处理其他面。"
+                ];
+                showHint(hints[stuckAttempts % hints.length]);
+            }, 800);
         }
 
         function showHint(content) {
-            const panel = document.getElementById('hintPanel');
-            const hintContent = document.getElementById('hintContent');
-            
-            hintContent.innerHTML = content.replace(/\n/g, '<br>');
-            panel.classList.add('show');
+            document.getElementById('hintContent').innerHTML = content;
+            document.getElementById('hintPanel').classList.add('show');
         }
 
-        function hideHint() {
-            document.getElementById('hintPanel').classList.remove('show');
-        }
+        function hideHint() { document.getElementById('hintPanel').classList.remove('show'); }
 
         function resetCube() {
-            cubeState = {
-                front: '#00b300',
-                back: '#0066cc',
-                right: '#cc0000',
-                left: '#ff6600',
-                top: '#ffffff',
-                bottom: '#ffcc00'
-            };
-            
-            steps = 0;
-            hintsRemaining = 3;
-            moveHistory = [];
-            stuckAttempts = 0;
-            isSolved = true;
-            startTime = null;
-            
+            rotationX = -25; rotationY = -40;
+            isSolved = true; steps = 0; hintsRemaining = 3; stuckAttempts = 0; startTime = null;
             document.getElementById('steps').textContent = '0';
             document.getElementById('hints').textContent = '3';
             hideHint();
-            updateCube();
+            updateRotation();
+            initCube();
         }
 
-        // Rotate cube with mouse
-        let isDragging = false;
-        let previousX, previousY;
-
-        document.querySelector('.scene').addEventListener('mousedown', (e) => {
-            isDragging = true;
-            previousX = e.clientX;
-            previousY = e.clientY;
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            
-            const deltaX = e.clientX - previousX;
-            const deltaY = e.clientY - previousY;
-            
-            rotationY += deltaX * 0.5;
-            rotationX -= deltaY * 0.5;
-            
-            document.getElementById('cube').style.transform = 
-                `rotateX(${rotationX}deg) rotateY(${rotationY}deg)`;
-            
-            previousX = e.clientX;
-            previousY = e.clientY;
-        });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        // Initialize
         initCube();
     </script>
 </body>
